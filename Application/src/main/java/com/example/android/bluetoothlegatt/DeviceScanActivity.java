@@ -26,6 +26,8 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.Handler;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -57,6 +59,9 @@ public class DeviceScanActivity extends ListActivity {
         getActionBar().setTitle(R.string.title_devices);
         mHandler = new Handler();
 
+        insertDummyContactWrapper();
+
+
         // Use this check to determine whether BLE is supported on the device.  Then you can
         // selectively disable BLE-related features.
         if (!getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) {
@@ -77,6 +82,24 @@ public class DeviceScanActivity extends ListActivity {
             return;
         }
     }
+
+
+    final private int REQUEST_CODE_ASK_PERMISSIONS = 110;
+
+    // Get location permissions.
+    private void insertDummyContactWrapper() {
+        int hasLocationPermission = ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION);
+
+
+        if (hasLocationPermission != PackageManager.PERMISSION_GRANTED)
+        {
+            ActivityCompat.requestPermissions(this,
+                    new String[] {android.Manifest.permission.ACCESS_FINE_LOCATION},
+                    REQUEST_CODE_ASK_PERMISSIONS);
+            return;
+        }
+    }
+
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {

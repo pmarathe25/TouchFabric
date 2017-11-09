@@ -25,6 +25,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
+import android.media.AudioManager;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.util.Log;
@@ -53,6 +54,7 @@ public class DeviceControlActivity extends Activity {
 
     private TextView mConnectionState;
     private TextView mDataField;
+    private TextView textView;
     private String mDeviceName;
     private String mDeviceAddress;
     private ExpandableListView mGattServicesList;
@@ -64,6 +66,10 @@ public class DeviceControlActivity extends Activity {
 
     private final String LIST_NAME = "NAME";
     private final String LIST_UUID = "UUID";
+
+    private GestureKNN recognizer = new GestureKNN();
+    AudioManager mAudioManager;
+    private MusicManager musicManager;
 
     // Code to manage Service lifecycle.
     private final ServiceConnection mServiceConnection = new ServiceConnection() {
@@ -109,6 +115,15 @@ public class DeviceControlActivity extends Activity {
                 displayGattServices(mBluetoothLeService.getSupportedGattServices());
             } else if (BluetoothLeService.ACTION_DATA_AVAILABLE.equals(action)) {
                 displayData(intent.getStringExtra(BluetoothLeService.EXTRA_DATA));
+                String gesture = intent.getStringExtra(BluetoothLeService.EXTRA_DATA);
+                // TODO: Integrate music app with the gesture recognizer.
+                Log.d("DeviceControlActivity", recognizer.recognize(gesture));
+                switch (recognizer.recognize(gesture)) {
+                    case "LRSwipe":
+                        musicManager.nextSong();
+                        break;
+                    case "UpSwipe":
+                }
             }
         }
     };
@@ -167,11 +182,18 @@ public class DeviceControlActivity extends Activity {
         mGattServicesList.setOnChildClickListener(servicesListClickListner);
         mConnectionState = (TextView) findViewById(R.id.connection_state);
         mDataField = (TextView) findViewById(R.id.data_value);
+        textView = (TextView) findViewById(R.id.textView);
+
+        // Create the music manager.
+        mAudioManager = (AudioManager)getSystemService(Context.AUDIO_SERVICE);
+        musicManager = new MusicManager(this, mAudioManager);
 
         getActionBar().setTitle(mDeviceName);
         getActionBar().setDisplayHomeAsUpEnabled(true);
         Intent gattServiceIntent = new Intent(this, BluetoothLeService.class);
         bindService(gattServiceIntent, mServiceConnection, BIND_AUTO_CREATE);
+
+
     }
 
     @Override
@@ -238,6 +260,7 @@ public class DeviceControlActivity extends Activity {
     private void displayData(String data) {
         if (data != null) {
             mDataField.setText(data);
+            textView.setText(data);
         }
     }
 
