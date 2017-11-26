@@ -24,7 +24,6 @@ class MusicManager {
     public MusicManager(Context context, AudioManager mAudioManager) {
         this.mAudioManager = mAudioManager;
         this.context = context;
-        startMusicPlayer();
     }
 
     public void nextSong() {
@@ -112,6 +111,14 @@ class MusicManager {
                 cancel();
             }
         }
+    }
+
+    public void increaseVolume() {
+        mAudioManager.adjustVolume(AudioManager.ADJUST_RAISE, AudioManager.FLAG_PLAY_SOUND);
+    }
+
+    public void decreaseVolume() {
+        mAudioManager.adjustVolume(AudioManager.ADJUST_LOWER, AudioManager.FLAG_PLAY_SOUND);
     }
 
 }

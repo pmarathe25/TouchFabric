@@ -28,6 +28,7 @@ import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
 import android.content.Context;
 import android.content.Intent;
+import android.media.AudioManager;
 import android.os.Binder;
 import android.os.IBinder;
 import android.util.Log;
@@ -68,6 +69,10 @@ public class BluetoothLeService extends Service {
 
     public final static UUID UUID_HEART_RATE_MEASUREMENT =
             UUID.fromString(SampleGattAttributes.HEART_RATE_MEASUREMENT);
+
+    private AudioManager mAudioManager;
+    private MusicManager musicManager;
+    private GestureKNN recognizer = new GestureKNN();
 
     // Implements callback methods for GATT events that the app cares about.  For example,
     // connection change and services discovered.
@@ -175,8 +180,6 @@ public class BluetoothLeService extends Service {
             Log.d(TAG, String.format("Received heart rate: %d", heartRate));
             intent.putExtra(EXTRA_DATA, String.valueOf(heartRate));
         } else {
-
-
             // For all other profiles, writes the data formatted in HEX.
             final byte[] data = characteristic.getValue();
             if (data != null && data.length > 0) {
@@ -185,6 +188,21 @@ public class BluetoothLeService extends Service {
                     stringBuilder.append(String.format("%02X ", byteChar));
                 // intent.putExtra(EXTRA_DATA, new String(data) + "\n" + stringBuilder.toString());
                 intent.putExtra(EXTRA_DATA, new String(data));
+
+                Log.d("Received data", new String(data));
+
+                switch (recognizer.recognize(new String(data))) {
+                    case "LRSwipe":
+                        musicManager.playPauseMusic();
+                        break;
+                    case "UpSwipe":
+                        musicManager.increaseVolume();
+                        break;
+                    case "DownSwipe":
+                        musicManager.decreaseVolume();
+                        break;
+                }
+
             }
         }
         sendBroadcast(intent);
@@ -218,6 +236,9 @@ public class BluetoothLeService extends Service {
      * @return Return true if the initialization is successful.
      */
     public boolean initialize() {
+        // Initialize music manager
+        mAudioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+        musicManager = new MusicManager(this, mAudioManager);
         // For API level 18 and above, get a reference to BluetoothAdapter through
         // BluetoothManager.
         if (mBluetoothManager == null) {

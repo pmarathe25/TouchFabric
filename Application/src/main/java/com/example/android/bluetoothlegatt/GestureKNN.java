@@ -6,26 +6,26 @@ package com.example.android.bluetoothlegatt;
 
 public class GestureKNN {
     private static int ROW_LENGTH = 4;
-    private static int MAX_GESTURE_LENGTH = 10;
-    private static int[][] GESTURE_LIBRARY = {
-            { 1,  0,  1,  0,  1,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0 },
-            { -1,  0,  -1,  0,  -1,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0 },
-            { 0,  -1,  0,  -1,  0,  -1,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0 },
-            { 0,  1,  0,  1,  0,  1,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0 },
+    private static int MAX_GESTURE_LENGTH = 15;
+    private static double[][] GESTURE_LIBRARY = {
+        { 1.000000,  0.000000,  1.000000,  0.000000,  1.000000,  0.000000,  1.000000,  0.000000,  1.000000,  0.000000,  1.000000,  0.000000,  1.000000,  0.000000,  1.000000,  0.000000,  1.000000,  0.000000,  1.000000,  0.000000,  1.000000,  0.000000,  1.000000,  0.000000,  1.000000,  0.000000,  1.000000,  0.000000,  1.000000,  0.000000 },
+        { -1.000000,  0.000000,  -1.000000,  0.000000,  -1.000000,  0.000000,  -1.000000,  0.000000,  -1.000000,  0.000000,  -1.000000,  0.000000,  -1.000000,  0.000000,  -1.000000,  0.000000,  -1.000000,  0.000000,  -1.000000,  0.000000,  -1.000000,  0.000000,  -1.000000,  0.000000,  -1.000000,  0.000000,  -1.000000,  0.000000,  -1.000000,  0.000000 },
+        { 0.000000,  -1.000000,  0.000000,  -1.000000,  0.000000,  -1.000000,  0.000000,  -1.000000,  0.000000,  -1.000000,  0.000000,  -1.000000,  0.000000,  -1.000000,  0.000000,  -1.000000,  0.000000,  -1.000000,  0.000000,  -1.000000,  0.000000,  -1.000000,  0.000000,  -1.000000,  0.000000,  -1.000000,  0.000000,  -1.000000,  0.000000,  -1.000000 },
+        { 0.000000,  1.000000,  0.000000,  1.000000,  0.000000,  1.000000,  0.000000,  1.000000,  0.000000,  1.000000,  0.000000,  1.000000,  0.000000,  1.000000,  0.000000,  1.000000,  0.000000,  1.000000,  0.000000,  1.000000,  0.000000,  1.000000,  0.000000,  1.000000,  0.000000,  1.000000,  0.000000,  1.000000,  0.000000,  1.000000 },
     };
-    private static String[] GESTURE_NAMES = {"LRSwipe", "RLSwipe", "UpSwipe", "DownSwipe"};
-
+    private static String[] GESTURE_NAMES = { "LRSwipe", "RLSwipe", "UpSwipe", "DownSwipe" };
 
     public GestureKNN() {
 
     }
 
     public static String recognize(String input) {
-        int[] gestureDeltas = createGestureDeltas(input);
-        int[] MSE = new int[GESTURE_LIBRARY.length];
+        double[] gestureDeltas = createGestureDeltas(input);
+        double[] interpolatedDeltas = interpolateGestureDeltas(gestureDeltas);
+        double[] MSE = new double[GESTURE_LIBRARY.length];
         for (int i = 0; i < GESTURE_LIBRARY.length; ++i) {
             // Loop over the gesture deltas and compare
-            int currentMSE = 0;
+            double currentMSE = 0;
             for (int j = 0; j < gestureDeltas.length; ++j) {
                 currentMSE += Math.pow((gestureDeltas[j] - GESTURE_LIBRARY[i][j]), 2);
             }
@@ -34,8 +34,8 @@ public class GestureKNN {
         return getMinGesture(MSE);
     }
 
-    private static String getMinGesture(int[] MSE) {
-        int min = 1024 * 1024;
+    private static String getMinGesture(double[] MSE) {
+        double min = 1024 * 1024;
         int minIndex = 0;
         for (int i = 0; i < MSE.length; ++i) {
             if (MSE[i] < min) {
@@ -46,9 +46,9 @@ public class GestureKNN {
         return GESTURE_NAMES[minIndex];
     }
 
-    private static int[] createGestureDeltas(String input) {
+    private static double[] createGestureDeltas(String input) {
         int x, y, nextX, nextY;
-        int[] gestureDeltas = new int[MAX_GESTURE_LENGTH * 2];
+        double[] gestureDeltas = new double[input.length() * 2];
         nextX = (input.charAt(0) - 97) % ROW_LENGTH;
         nextY = (input.charAt(0) - 97) / ROW_LENGTH;
         for (int i = 0; i < input.length() - 1; ++i) {
@@ -56,9 +56,32 @@ public class GestureKNN {
             y = nextY;
             nextX = (input.charAt(i) - 97) % ROW_LENGTH;
             nextY = (input.charAt(i + 1) - 97) / ROW_LENGTH;
-            gestureDeltas[2 * i] = nextX - x;
-            gestureDeltas[2 * i + 1] = nextY - y;
+            gestureDeltas[i * 2] = nextX - x;
+            gestureDeltas[i * 2 + 1] = nextY - y;
         }
         return gestureDeltas;
     }
+
+    private static double[] interpolateGestureDeltas(double[] gestureDeltas) {
+        double[] interpolatedDeltas = new double[MAX_GESTURE_LENGTH * 2];
+        double stepSize = (gestureDeltas.length - 1) / MAX_GESTURE_LENGTH;
+        double currentStep = 0.0;
+        for (int i = 0; i < MAX_GESTURE_LENGTH * 2; i += 2) {
+            // Points to interpolate
+            double leftValX = gestureDeltas[(int) Math.floor(currentStep) * 2];
+            double leftValY = gestureDeltas[(int) Math.floor(currentStep) * 2 + 1];
+            double rightValX = gestureDeltas[(int) Math.ceil(currentStep) * 2];
+            double rightValY = gestureDeltas[(int) Math.ceil(currentStep) * 2 + 1];
+            // Compute weights
+            double leftWeight = (Math.floor(currentStep) + 1) - currentStep;
+            double rightWeight = 1 - leftWeight;
+            // Insert the interpolated delta
+            interpolatedDeltas[i] = leftValX * leftWeight + rightValX + rightWeight;
+            interpolatedDeltas[i + 1] = leftValY * leftWeight + rightValY + rightWeight;
+            // Next!
+            currentStep += stepSize;
+        }
+        return interpolatedDeltas;
+    }
+
 }
