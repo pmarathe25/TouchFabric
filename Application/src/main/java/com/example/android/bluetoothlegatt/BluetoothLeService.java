@@ -187,19 +187,29 @@ public class BluetoothLeService extends Service {
                 for(byte byteChar : data)
                     stringBuilder.append(String.format("%02X ", byteChar));
                 // intent.putExtra(EXTRA_DATA, new String(data) + "\n" + stringBuilder.toString());
-                intent.putExtra(EXTRA_DATA, new String(data));
+                String gestureData = new String(data);
+                intent.putExtra(EXTRA_DATA, gestureData);
 
-                Log.d("Received data", new String(data));
+                Log.d("Received data", gestureData + " recognized as " + recognizer.recognize(gestureData));
 
-                switch (recognizer.recognize(new String(data))) {
-                    case "LRSwipe":
+                switch (recognizer.recognize(gestureData)) {
+                    case "NESWSwipe":
                         musicManager.playPauseMusic();
                         break;
+                    case "RLSwipe":
+                        musicManager.nextSong();
+                        break;
+                    case "LRSwipe":
+                        musicManager.previousSong();
+                        break;
                     case "UpSwipe":
-                        musicManager.increaseVolume();
+                        musicManager.increaseVolume(2);
                         break;
                     case "DownSwipe":
-                        musicManager.decreaseVolume();
+                        musicManager.decreaseVolume(2);
+                        break;
+                    case "NWSESwipe":
+                        musicManager.mute();
                         break;
                 }
 

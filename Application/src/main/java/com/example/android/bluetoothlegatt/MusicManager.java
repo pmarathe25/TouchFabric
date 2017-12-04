@@ -15,11 +15,12 @@ import java.util.TimerTask;
  * Created by pranav on 11/9/17.
  */
 
-
 class MusicManager {
     private AudioManager mAudioManager;
     private static Context context;
     private Timer mMusicPlayerStartTimer = new Timer("MusicPlayerStartTimer", true);
+    private int previousVolume = 0;
+    private boolean muted = false;
 
     public MusicManager(Context context, AudioManager mAudioManager) {
         this.mAudioManager = mAudioManager;
@@ -44,6 +45,26 @@ class MusicManager {
             context.sendOrderedBroadcast(intent, null);
         }
     }
+
+    public void previousSong() {
+
+        int keyCode = KeyEvent.KEYCODE_MEDIA_PREVIOUS;
+
+        if (!isSpotifyRunning()) {
+            startMusicPlayer();
+        }
+
+        Intent intent = new Intent(Intent.ACTION_MEDIA_BUTTON);
+        intent.setPackage("com.spotify.music");
+        synchronized (this) {
+            intent.putExtra(Intent.EXTRA_KEY_EVENT, new KeyEvent(KeyEvent.ACTION_DOWN, keyCode));
+            context.sendOrderedBroadcast(intent, null);
+
+            intent.putExtra(Intent.EXTRA_KEY_EVENT, new KeyEvent(KeyEvent.ACTION_UP, keyCode));
+            context.sendOrderedBroadcast(intent, null);
+        }
+    }
+
 
     public void playPauseMusic() {
         int keyCode = KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE;
@@ -113,12 +134,29 @@ class MusicManager {
         }
     }
 
-    public void increaseVolume() {
-        mAudioManager.adjustVolume(AudioManager.ADJUST_RAISE, AudioManager.FLAG_PLAY_SOUND);
+    public void increaseVolume(int steps) {
+        muted = false;
+        for (int i = 0; i < steps; ++i) {
+            mAudioManager.adjustVolume(AudioManager.ADJUST_RAISE, AudioManager.FLAG_PLAY_SOUND);
+        }
     }
 
-    public void decreaseVolume() {
-        mAudioManager.adjustVolume(AudioManager.ADJUST_LOWER, AudioManager.FLAG_PLAY_SOUND);
+    public void decreaseVolume(int steps) {
+        for (int i = 0; i < steps; ++i) {
+            mAudioManager.adjustVolume(AudioManager.ADJUST_LOWER, AudioManager.FLAG_PLAY_SOUND);
+        }
     }
+
+    public void mute() {
+        if (muted) {
+            mAudioManager.setStreamVolume(AudioManager.STREAM_MUSIC, previousVolume, previousVolume);
+        } else {
+            previousVolume = mAudioManager.getStreamVolume(AudioManager.STREAM_MUSIC);
+            mAudioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 0, 0);
+        }
+        muted = !muted;
+    }
+
+
 
 }
